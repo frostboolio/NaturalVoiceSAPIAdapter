@@ -19,7 +19,8 @@ jobs:
         shell: pwsh
         run: |
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $install = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
+          $install = & $vswhere -latest -version "[17.0,18.0)" -products * -requires Microsoft.VisualStudio.Component.VC.ATL -property installationPath
+          if (-not $install) { throw "Visual Studio 2022 with ATL was not found" }
           "$install\MSBuild\Current\Bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Restore packages
