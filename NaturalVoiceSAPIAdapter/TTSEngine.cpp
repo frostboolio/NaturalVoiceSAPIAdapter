@@ -634,10 +634,15 @@ void CTTSEngine::SetupRestAPIEvents(ULONGLONG interests)
     m_restApi->AudioReceivedCallback = std::bind_front(&CTTSEngine::OnAudioData, this);
     if (interests & SVEBookmark)
         m_restApi->BookmarkCallback = [this](auto a, auto b) { OnBookmark(a, UTF8ToWString(b)); };
-    if ((interests & SVEWordBoundary)
-        || (m_isEdgeVoice && (interests & SVEBookmark))) // Edge voice's bookmarks require word boundary events
+    // WoW requests word-boundary events but does not use them for quest TTS.
+    // Edge can deliver those events behind the corresponding streamed audio,
+    // which makes WoW buffer a new utterance for several seconds.  Keep the
+    // normal behavior for Azure/local voices and suppress only Edge boundary
+    // events in this compatibility build.
+    if (!m_isEdgeVoice && ((interests & SVEWordBoundary)
+        || (interests & SVEBookmark)))
         m_restApi->WordBoundaryCallback = [this](auto a, auto b, auto c) { OnBoundary(a, b, c, SPEI_WORD_BOUNDARY); };
-    if (interests & SVESentenceBoundary)
+    if (!m_isEdgeVoice && (interests & SVESentenceBoundary))
         m_restApi->SentenceBoundaryCallback = [this](auto a, auto b, auto c) { OnBoundary(a, b, c, SPEI_SENTENCE_BOUNDARY); };
     if (interests & SVEViseme)
         m_restApi->VisemeCallback = std::bind_front(&CTTSEngine::OnViseme, this);
